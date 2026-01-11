@@ -1,4 +1,6 @@
 import { Brain, Database, Layers, Cpu, Network, Workflow } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
+import StaggerChildren from "./StaggerChildren";
 
 const techStack = [
   {
@@ -43,7 +45,7 @@ const Technology = () => {
     <section id="technology" className="section-padding relative bg-secondary/30">
       <div className="container-wide relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <ScrollReveal className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
             <Cpu className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium text-accent">Under The Hood</span>
@@ -58,10 +60,10 @@ const Technology = () => {
             State-of-the-art machine learning models analyze text at multiple levels, 
             from individual word choice to overall narrative structure.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Tech Stack Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-16">
+        <StaggerChildren className="grid md:grid-cols-2 gap-6 mb-16" staggerDelay={0.12}>
           {techStack.map((tech, index) => (
             <div 
               key={index}
@@ -81,43 +83,45 @@ const Technology = () => {
               </div>
             </div>
           ))}
-        </div>
+        </StaggerChildren>
 
         {/* Pipeline Visualization */}
-        <div className="glass-card p-8 md:p-12">
-          <div className="flex items-center gap-3 mb-8">
-            <Workflow className="h-6 w-6 text-primary" />
-            <h3 className="font-display text-2xl font-bold">Analysis Pipeline</h3>
-          </div>
-          
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {pipelineSteps.map((item, index) => (
-              <div key={index} className="relative">
-                <div className="bg-secondary rounded-xl p-6 h-full">
-                  <div className="text-4xl font-display font-bold text-primary/30 mb-3">
-                    {item.step}
+        <ScrollReveal delay={0.2}>
+          <div className="glass-card p-8 md:p-12">
+            <div className="flex items-center gap-3 mb-8">
+              <Workflow className="h-6 w-6 text-primary" />
+              <h3 className="font-display text-2xl font-bold">Analysis Pipeline</h3>
+            </div>
+            
+            <StaggerChildren className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4" staggerDelay={0.1}>
+              {pipelineSteps.map((item, index) => (
+                <div key={index} className="relative">
+                  <div className="bg-secondary rounded-xl p-6 h-full">
+                    <div className="text-4xl font-display font-bold text-primary/30 mb-3">
+                      {item.step}
+                    </div>
+                    <h4 className="font-semibold mb-1">{item.label}</h4>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
                   </div>
-                  <h4 className="font-semibold mb-1">{item.label}</h4>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  
+                  {index < pipelineSteps.length - 1 && (
+                    <div className="hidden lg:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
+                      <div className="w-4 h-4 rotate-45 border-t-2 border-r-2 border-primary/50" />
+                    </div>
+                  )}
                 </div>
-                
-                {index < pipelineSteps.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
-                    <div className="w-4 h-4 rotate-45 border-t-2 border-r-2 border-primary/50" />
-                  </div>
-                )}
+              ))}
+            </StaggerChildren>
+            
+            {/* Architecture Diagram */}
+            <div className="mt-10 pt-8 border-t border-border/50">
+              <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                <Network className="h-4 w-4" />
+                <span>Model Architecture: Transformer-based ensemble with attention mechanisms</span>
               </div>
-            ))}
-          </div>
-          
-          {/* Architecture Diagram */}
-          <div className="mt-10 pt-8 border-t border-border/50">
-            <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-              <Network className="h-4 w-4" />
-              <span>Model Architecture: Transformer-based ensemble with attention mechanisms</span>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

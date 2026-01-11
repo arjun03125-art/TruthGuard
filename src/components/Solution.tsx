@@ -1,4 +1,6 @@
 import { Shield, Gauge, Search, AlertCircle, CheckCircle2, Zap } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
+import StaggerChildren from "./StaggerChildren";
 
 const features = [
   {
@@ -41,7 +43,7 @@ const Solution = () => {
       
       <div className="container-wide relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <ScrollReveal className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
             <Shield className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">The Solution</span>
@@ -56,10 +58,10 @@ const Solution = () => {
             Our advanced AI analyzes news content in real-time, providing instant verification 
             with transparent reasoning and confidence scores you can trust.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StaggerChildren className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" staggerDelay={0.1}>
           {features.map((feature, index) => (
             <div 
               key={index}
@@ -78,47 +80,49 @@ const Solution = () => {
               </p>
             </div>
           ))}
-        </div>
+        </StaggerChildren>
 
         {/* Output Preview */}
-        <div className="mt-16 glass-card p-8 md:p-12 glow-effect">
-          <div className="text-center mb-8">
-            <h3 className="font-display text-2xl font-bold mb-2">What You Get</h3>
-            <p className="text-muted-foreground">Comprehensive analysis in one glance</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-success/20 flex items-center justify-center">
-                <CheckCircle2 className="h-10 w-10 text-success" />
-              </div>
-              <h4 className="font-semibold mb-2">Clear Verdict</h4>
-              <p className="text-sm text-muted-foreground">
-                Real or Fake classification with reasoning
-              </p>
+        <ScrollReveal delay={0.2} className="mt-16">
+          <div className="glass-card p-8 md:p-12 glow-effect">
+            <div className="text-center mb-8">
+              <h3 className="font-display text-2xl font-bold mb-2">What You Get</h3>
+              <p className="text-muted-foreground">Comprehensive analysis in one glance</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-2xl font-display font-bold text-primary">94%</span>
+            <StaggerChildren className="grid md:grid-cols-3 gap-8" staggerDelay={0.15}>
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-success/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-10 w-10 text-success" />
+                </div>
+                <h4 className="font-semibold mb-2">Clear Verdict</h4>
+                <p className="text-sm text-muted-foreground">
+                  Real or Fake classification with reasoning
+                </p>
               </div>
-              <h4 className="font-semibold mb-2">Confidence Score</h4>
-              <p className="text-sm text-muted-foreground">
-                Precise percentage indicating reliability
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-                <AlertCircle className="h-10 w-10 text-warning" />
+              
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-2xl font-display font-bold text-primary">94%</span>
+                </div>
+                <h4 className="font-semibold mb-2">Confidence Score</h4>
+                <p className="text-sm text-muted-foreground">
+                  Precise percentage indicating reliability
+                </p>
               </div>
-              <h4 className="font-semibold mb-2">Red Flags</h4>
-              <p className="text-sm text-muted-foreground">
-                Highlighted misleading phrases & patterns
-              </p>
-            </div>
+              
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
+                  <AlertCircle className="h-10 w-10 text-warning" />
+                </div>
+                <h4 className="font-semibold mb-2">Red Flags</h4>
+                <p className="text-sm text-muted-foreground">
+                  Highlighted misleading phrases & patterns
+                </p>
+              </div>
+            </StaggerChildren>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

@@ -1,4 +1,6 @@
 import { AlertTriangle, TrendingUp, Users, Globe } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
+import StaggerChildren from "./StaggerChildren";
 
 const stats = [
   {
@@ -29,7 +31,7 @@ const Problem = () => {
       
       <div className="container-wide relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <ScrollReveal className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-destructive/10 border border-destructive/20 mb-6">
             <AlertTriangle className="h-4 w-4 text-destructive" />
             <span className="text-sm font-medium text-destructive">The Growing Threat</span>
@@ -44,10 +46,10 @@ const Problem = () => {
             Fake news spreads rapidly through social platforms, causing societal, political, 
             and health consequences. Traditional fact-checking can't keep pace—until now.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <StaggerChildren className="grid md:grid-cols-3 gap-8" staggerDelay={0.15}>
           {stats.map((stat, index) => (
             <div 
               key={index}
@@ -70,37 +72,39 @@ const Problem = () => {
               </p>
             </div>
           ))}
-        </div>
+        </StaggerChildren>
 
         {/* Additional Context */}
-        <div className="mt-16 glass-card p-8 md:p-12">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h3 className="font-display text-2xl md:text-3xl font-bold mb-4">
-                The Lack of Fast, Reliable Verification
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Traditional fact-checking takes hours or days. By then, false information 
-                has already reached millions. Social media algorithms amplify sensational 
-                content, making verification even more critical—and more urgent than ever.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "Daily fake articles", value: "1M+" },
-                { label: "Avg. spread time", value: "<6 hrs" },
-                { label: "Manual check time", value: "48+ hrs" },
-                { label: "AI verification", value: "<3 sec" },
-              ].map((item, index) => (
-                <div key={index} className="bg-secondary/50 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-display font-bold text-primary">{item.value}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{item.label}</div>
-                </div>
-              ))}
+        <ScrollReveal delay={0.3} className="mt-16">
+          <div className="glass-card p-8 md:p-12">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 className="font-display text-2xl md:text-3xl font-bold mb-4">
+                  The Lack of Fast, Reliable Verification
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Traditional fact-checking takes hours or days. By then, false information 
+                  has already reached millions. Social media algorithms amplify sensational 
+                  content, making verification even more critical—and more urgent than ever.
+                </p>
+              </div>
+              
+              <StaggerChildren className="grid grid-cols-2 gap-4" staggerDelay={0.1}>
+                {[
+                  { label: "Daily fake articles", value: "1M+" },
+                  { label: "Avg. spread time", value: "<6 hrs" },
+                  { label: "Manual check time", value: "48+ hrs" },
+                  { label: "AI verification", value: "<3 sec" },
+                ].map((item, index) => (
+                  <div key={index} className="bg-secondary/50 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-display font-bold text-primary">{item.value}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{item.label}</div>
+                  </div>
+                ))}
+              </StaggerChildren>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

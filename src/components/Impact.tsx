@@ -1,4 +1,6 @@
 import { Globe, Smartphone, Share2, ChevronRight, Target, Users, TrendingUp } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
+import StaggerChildren from "./StaggerChildren";
 
 const impactStats = [
   { icon: Target, value: "98.5%", label: "Accuracy Rate" },
@@ -34,7 +36,7 @@ const Impact = () => {
       
       <div className="container-wide relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <ScrollReveal className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 mb-6">
             <Globe className="h-4 w-4 text-success" />
             <span className="text-sm font-medium text-success">Making a Difference</span>
@@ -49,10 +51,10 @@ const Impact = () => {
             Reducing misinformation at scale while encouraging responsible content consumption 
             across communities worldwide.
           </p>
-        </div>
+        </ScrollReveal>
 
         {/* Impact Stats */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
+        <StaggerChildren className="grid md:grid-cols-3 gap-6 mb-16" staggerDelay={0.12}>
           {impactStats.map((stat, index) => (
             <div key={index} className="glass-card p-8 text-center hover-lift">
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -64,58 +66,60 @@ const Impact = () => {
               <div className="text-muted-foreground">{stat.label}</div>
             </div>
           ))}
-        </div>
+        </StaggerChildren>
 
         {/* Vision Statement */}
-        <div className="glass-card p-8 md:p-12 mb-16 text-center glow-effect">
-          <h3 className="font-display text-2xl md:text-3xl font-bold mb-4">
-            Our Mission
-          </h3>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            We believe in a world where truth prevails. By making AI-powered verification accessible 
-            to everyone, we're building the foundation for a more informed society—one fact-check at a time.
-          </p>
-        </div>
+        <ScrollReveal delay={0.2}>
+          <div className="glass-card p-8 md:p-12 mb-16 text-center glow-effect">
+            <h3 className="font-display text-2xl md:text-3xl font-bold mb-4">
+              Our Mission
+            </h3>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              We believe in a world where truth prevails. By making AI-powered verification accessible 
+              to everyone, we're building the foundation for a more informed society—one fact-check at a time.
+            </p>
+          </div>
+        </ScrollReveal>
 
         {/* Roadmap */}
-        <div>
+        <ScrollReveal delay={0.1}>
           <h3 className="font-display text-2xl font-bold text-center mb-8">
             What's Next
           </h3>
+        </ScrollReveal>
           
-          <div className="grid md:grid-cols-3 gap-6">
-            {roadmapItems.map((item, index) => (
-              <div key={index} className="glass-card p-6 hover-lift group">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <item.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <span className={`text-xs px-3 py-1 rounded-full ${
-                    item.status === "In Progress" 
-                      ? "bg-success/10 text-success" 
-                      : item.status === "Coming Soon"
-                      ? "bg-warning/10 text-warning"
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    {item.status}
-                  </span>
+        <StaggerChildren className="grid md:grid-cols-3 gap-6" staggerDelay={0.15}>
+          {roadmapItems.map((item, index) => (
+            <div key={index} className="glass-card p-6 hover-lift group">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <item.icon className="h-6 w-6 text-primary" />
                 </div>
-                
-                <h4 className="font-display text-lg font-semibold mb-2">
-                  {item.title}
-                </h4>
-                
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {item.description}
-                </p>
-                
-                <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Learn more <ChevronRight className="h-4 w-4" />
-                </div>
+                <span className={`text-xs px-3 py-1 rounded-full ${
+                  item.status === "In Progress" 
+                    ? "bg-success/10 text-success" 
+                    : item.status === "Coming Soon"
+                    ? "bg-warning/10 text-warning"
+                    : "bg-muted text-muted-foreground"
+                }`}>
+                  {item.status}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+              
+              <h4 className="font-display text-lg font-semibold mb-2">
+                {item.title}
+              </h4>
+              
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {item.description}
+              </p>
+              
+              <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                Learn more <ChevronRight className="h-4 w-4" />
+              </div>
+            </div>
+          ))}
+        </StaggerChildren>
       </div>
     </section>
   );
