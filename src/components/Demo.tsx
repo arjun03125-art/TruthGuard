@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Search, Loader2, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface AnalysisResult {
   verdict: "real" | "fake" | "uncertain";
@@ -13,6 +15,7 @@ const Demo = () => {
   const [inputText, setInputText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const { toast } = useToast();
 
   const sampleTexts = [
     "Scientists discover new planet made entirely of diamonds orbiting nearby star",
@@ -26,26 +29,41 @@ const Demo = () => {
     setIsAnalyzing(true);
     setResult(null);
 
-    // Simulated analysis
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-news', {
+        body: { text: inputText.trim() }
+      });
 
-    // Demo results based on input
-    const isSuspicious = inputText.toLowerCase().includes("breaking") || 
-                         inputText.toLowerCase().includes("mandatory") ||
-                         inputText.toLowerCase().includes("diamonds");
-    
-    setResult({
-      verdict: isSuspicious ? "fake" : "real",
-      confidence: isSuspicious ? 87 : 94,
-      explanation: isSuspicious 
-        ? "This content contains sensationalist language patterns and unverified claims commonly associated with misinformation."
-        : "This content follows factual reporting patterns with verifiable claims and balanced language.",
-      redFlags: isSuspicious 
-        ? ["Sensationalist headline", "Unverified claims", "Emotional manipulation patterns"]
-        : [],
-    });
-    
-    setIsAnalyzing(false);
+      if (error) {
+        console.error('Analysis error:', error);
+        toast({
+          title: "Analysis Failed",
+          description: error.message || "Failed to analyze content. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.error) {
+        toast({
+          title: "Analysis Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setResult(data as AnalysisResult);
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const getVerdictStyles = () => {
@@ -223,7 +241,7 @@ const Demo = () => {
 
         {/* Disclaimer */}
         <p className="text-center text-xs text-muted-foreground mt-6">
-          This is a demonstration. Results are simulated for preview purposes.
+          Powered by AI. Results are for informational purposes only and should not replace professional fact-checking.
         </p>
       </div>
     </section>
