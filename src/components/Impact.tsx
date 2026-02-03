@@ -2,6 +2,10 @@ import { Globe, Smartphone, Share2, ChevronRight, Target, Users, TrendingUp } fr
 import ScrollReveal from "./ScrollReveal";
 import StaggerChildren from "./StaggerChildren";
 
+const impactStats = [
+  { icon: Target, value: "98.5%", label: "Accuracy Rate" },
+];
+
 const roadmapItems = [
   {
     icon: Globe,
