@@ -4,7 +4,7 @@ import Problem from "@/components/Problem";
 import Solution from "@/components/Solution";
 import Technology from "@/components/Technology";
 import Demo from "@/components/Demo";
-import BuildProcess from "@/components/BuildProcess";
+
 import Impact from "@/components/Impact";
 import Footer from "@/components/Footer";
 
@@ -18,7 +18,7 @@ const Index = () => {
         <Solution />
         <Technology />
         <Demo />
-        <BuildProcess />
+     
         <Impact />
       </main>
       <Footer />
