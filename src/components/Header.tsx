@@ -7,8 +7,9 @@ const Header = () => {
 
   const navLinks = [
     { label: "How It Works", href: "#how-it-works" },
+    { label: "Technology", href: "#technology" },
     { label: "Demo", href: "#demo" },
-    { label: "Technology & Impact", href: "/technology-impact", isPage: true },
+    { label: "Impact", href: "#impact" },
   ];
 
   return (
@@ -24,23 +25,13 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              link.isPage ? (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-                >
-                  {link.label}
-                </a>
-              ) : (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-                >
-                  {link.label}
-                </a>
-              )
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+              >
+                {link.label}
+              </a>
             ))}
           </nav>
 
