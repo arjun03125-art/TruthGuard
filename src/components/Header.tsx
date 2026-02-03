@@ -6,9 +6,9 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Demo", href: "#demo" },
-    { label: "Technology & Impact", href: "/technology-impact", isPage: true },
+    { label: "Home", href: "/" },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "Technology & Impact", href: "/technology-impact" },
   ];
 
   return (
@@ -24,31 +24,21 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              link.isPage ? (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-                >
-                  {link.label}
-                </a>
-              ) : (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-                >
-                  {link.label}
-                </a>
-              )
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
+              >
+                {link.label}
+              </a>
             ))}
           </nav>
 
           {/* CTA */}
           <div className="hidden md:block">
-            <a href="#demo">
+            <a href="/how-it-works">
               <Button variant="hero" size="default">
-                Analyze News
+                Get Started
               </Button>
             </a>
           </div>
@@ -80,9 +70,9 @@ const Header = () => {
                   {link.label}
                 </a>
               ))}
-              <a href="#demo" onClick={() => setIsMenuOpen(false)}>
+              <a href="/how-it-works" onClick={() => setIsMenuOpen(false)}>
                 <Button variant="hero" size="default" className="mt-2 w-full">
-                  Analyze News
+                  Get Started
                 </Button>
               </a>
             </nav>

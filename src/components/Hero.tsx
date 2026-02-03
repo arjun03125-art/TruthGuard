@@ -56,17 +56,17 @@ const Hero = () => {
             className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up"
             style={{ animationDelay: "0.3s" }}
           >
-            <a href="#demo">
+            <a href="/how-it-works">
               <Button variant="hero" size="xl" className="group">
                 <Shield className="h-5 w-5" />
-                Analyze News
+                How It Works
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </a>
-            <a href="#how-it-works">
+            <a href="/technology-impact">
               <Button variant="heroOutline" size="xl" className="group">
                 <Play className="h-4 w-4" />
-                How It Works
+                Technology & Impact
               </Button>
             </a>
           </div>
