@@ -1,17 +1,19 @@
 import Header from "@/components/Header";
 import Technology from "@/components/Technology";
+import Impact from "@/components/Impact";
 import Footer from "@/components/Footer";
 
-const TechnologyPage = () => {
+const TechnologyImpact = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-16">
         <Technology />
+        <Impact />
       </main>
       <Footer />
     </div>
   );
 };
 
-export default TechnologyPage;
+export default TechnologyImpact;

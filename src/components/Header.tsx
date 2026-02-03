@@ -8,7 +8,7 @@ const Header = () => {
   const navLinks = [
     { label: "How It Works", href: "#how-it-works" },
     { label: "Demo", href: "#demo" },
-    { label: "Technology", href: "/technology", isPage: true },
+    { label: "Technology & Impact", href: "/technology-impact", isPage: true },
   ];
 
   return (
