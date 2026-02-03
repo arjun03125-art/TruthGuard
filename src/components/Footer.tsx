@@ -1,4 +1,4 @@
-import { Shield, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
+import { Shield, Github } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -22,20 +22,14 @@ const Footer = () => {
 
             {/* Social Links */}
             <div className="flex items-center gap-4">
-              {[
-                { icon: Github, href: "#" },
-                { icon: Twitter, href: "#" },
-                { icon: Linkedin, href: "#" },
-                { icon: Mail, href: "#" },
-              ].map((social, index) => (
-                <a
-                  key={index}
-                  href={social.href}
-                  className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
-                >
-                  <social.icon className="h-5 w-5" />
-                </a>
-              ))}
+              <a
+                href="https://github.com/arjun03125-art/TruthGuard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
+              >
+                <Github className="h-5 w-5" />
+              </a>
             </div>
           </div>
 
@@ -83,15 +77,17 @@ const Footer = () => {
             © 2025 TruthGuard. All rights reserved.
           </p>
 
-          <p className="text-sm text-muted-foreground flex items-center gap-1">
-            Built with <Heart className="h-4 w-4 text-destructive" /> for truth
-          </p>
-
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="#"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               Privacy Policy
             </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="#"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               Terms of Service
             </a>
           </div>
