@@ -6,6 +6,8 @@ import {
   XCircle,
   AlertTriangle,
   Info,
+  ExternalLink,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +15,18 @@ import { useToast } from "@/hooks/use-toast";
 import ScrollReveal from "./ScrollReveal";
 import { motion } from "framer-motion";
 
+interface AnalysisSource {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
 interface AnalysisResult {
   verdict: "real" | "fake" | "uncertain";
   confidence: number;
   explanation: string;
   redFlags: string[];
+  sources: AnalysisSource[];
 }
 
 const Demo = () => {
@@ -300,6 +309,55 @@ const Demo = () => {
                         >
                           {flag}
                         </motion.span>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Sources */}
+                {result.sources && result.sources.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="mt-6"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Globe className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">
+                        Sources ({result.sources.length})
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {result.sources.map((source, index) => (
+                        <motion.a
+                          key={index}
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.6 + index * 0.08 }}
+                          className="block p-3 rounded-lg bg-secondary/50 border border-border/50 hover:border-primary/40 transition-colors group"
+                        >
+                          <div className="flex items-start gap-2">
+                            <ExternalLink className="h-3.5 w-3.5 mt-0.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                                {source.title || "Source"}
+                              </div>
+                              {source.snippet && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {source.snippet}
+                                </p>
+                              )}
+                              <span className="text-xs text-muted-foreground/60 truncate block mt-1">
+                                {source.url}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.a>
                       ))}
                     </div>
                   </motion.div>
