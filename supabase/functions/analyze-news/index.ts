@@ -3,131 +3,251 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ------------------------------
-// Gemini call with optional Google Search grounding
-// ------------------------------
-async function callGemini({
-  apiKey,
-  system,
-  user,
-  useGrounding = false,
-}: {
-  apiKey: string;
-  system: string;
-  user: string;
-  useGrounding?: boolean;
-}) {
-  const body: any = {
-    model: "google/gemini-3-flash-preview",
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
+function getTodayString(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+interface Source {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+// Use Gemini with tool_call to perform a web search, then analyze
+async function callGeminiWithSearch(apiKey: string, userInput: string, today: string) {
+  // Step 1: Ask the model to formulate search queries using tool calling
+  const searchToolDef = {
+    type: "function" as const,
+    function: {
+      name: "web_search",
+      description: "Search the web for current information to fact-check a claim. Call this for each distinct claim that needs verification.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query to verify the claim" },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
   };
 
-  // Enable Gemini Google Search grounding when requested
-  if (useGrounding) {
-    body.tools = [{ googleSearch: {} }];
-  }
+  const systemPrompt = `Today's real date is ${today}. You are an expert fact-checker.
+You MUST use the web_search tool to verify any claims before making a verdict. Search for the key factual claims in the text.
+Do NOT rely on training data alone — always search first.`;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  // First call: let model decide what to search
+  const firstRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Fact-check this:\n"${userInput}"` },
+      ],
+      tools: [searchToolDef],
+      tool_choice: { type: "function", function: { name: "web_search" } },
+    }),
   });
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Gemini error:", res.status, errorText);
-    if (res.status === 429) return { error: "Rate limit exceeded. Please try again later." };
-    if (res.status === 402) return { error: "AI service quota exceeded. Please try again later." };
+  if (!firstRes.ok) {
+    const errText = await firstRes.text();
+    console.error("Gemini tool call error:", firstRes.status, errText);
+    if (firstRes.status === 429) return { error: "Rate limit exceeded. Please try again later." };
+    if (firstRes.status === 402) return { error: "AI service quota exceeded. Please try again later." };
     return { error: "Failed to analyze content" };
   }
 
-  const data = await res.json();
-  const choice = data.choices?.[0];
-  const content = choice?.message?.content;
+  const firstData = await firstRes.json();
+  const firstChoice = firstData.choices?.[0];
 
-  if (!content) {
-    console.error("No content in Gemini response:", data);
-    return { error: "Invalid AI response" };
+  // Extract search queries from tool calls
+  const toolCalls = firstChoice?.message?.tool_calls ?? [];
+  const searchQueries: string[] = [];
+  for (const tc of toolCalls) {
+    try {
+      const args = typeof tc.function.arguments === "string"
+        ? JSON.parse(tc.function.arguments)
+        : tc.function.arguments;
+      if (args.query) searchQueries.push(args.query);
+    } catch { /* skip bad parse */ }
   }
 
-  // Extract grounding sources if present
-  const groundedSources: Array<{ title: string; url: string }> = [];
+  if (searchQueries.length === 0) {
+    // Model didn't use tool — add a default search
+    searchQueries.push(userInput.slice(0, 200));
+  }
 
-  // Check various locations where grounding metadata may appear
-  const meta = choice?.message?.grounding_metadata
-    ?? choice?.message?.groundingMetadata
-    ?? data?.grounding_metadata
-    ?? data?.groundingMetadata;
+  console.log("Search queries:", searchQueries);
 
-  if (meta?.grounding_chunks || meta?.groundingChunks) {
-    const chunks = meta.grounding_chunks ?? meta.groundingChunks ?? [];
-    for (const chunk of chunks) {
-      const web = chunk.web ?? chunk;
-      if (web?.uri || web?.url) {
-        groundedSources.push({
-          title: web.title ?? "Source",
-          url: web.uri ?? web.url,
-        });
+  // Step 2: Execute real web searches via Google Custom Search (free) or Gemini grounding
+  const allSources: Source[] = [];
+  const allSnippets: string[] = [];
+
+  for (const query of searchQueries.slice(0, 3)) {
+    const results = await performWebSearch(query);
+    for (const r of results) {
+      if (!allSources.some(s => s.url === r.url)) {
+        allSources.push(r);
+        allSnippets.push(`- ${r.title}: ${r.snippet} (${r.url})`);
       }
     }
   }
 
-  // Also check search_entry_point / support chunks
-  if (meta?.search_entry_point?.rendered_content) {
-    console.log("Search grounding was used by Gemini.");
+  const topSources = allSources.slice(0, 8);
+  const evidenceText = allSnippets.slice(0, 8).join("\n");
+
+  console.log(`Found ${topSources.length} sources from web search`);
+
+  // Step 3: Final analysis with search results as context
+  const analysisSystem = `Today's real date is ${today}. You are an expert fact-checker.
+You have been given LIVE web search results below. Base your verdict ONLY on this evidence and the user's claim.
+If the evidence is insufficient or contradictory, verdict MUST be "uncertain".
+
+Respond with valid JSON exactly in this format (no markdown, no code fences):
+{
+  "verdict": "real" | "fake" | "uncertain",
+  "confidence": <number 0-100>,
+  "explanation": "<clear explanation grounded in the search evidence>",
+  "redFlags": ["<flag1>", "<flag2>"]
+}`;
+
+  const analysisUser = `Claim to fact-check:\n"${userInput}"\n\nLive web search evidence:\n${evidenceText || "No results found — mark as uncertain."}`;
+
+  const analysisRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: analysisSystem },
+        { role: "user", content: analysisUser },
+      ],
+    }),
+  });
+
+  if (!analysisRes.ok) {
+    const errText = await analysisRes.text();
+    console.error("Analysis call error:", analysisRes.status, errText);
+    return { error: "Failed to analyze content" };
   }
 
-  return { content, groundedSources };
+  const analysisData = await analysisRes.json();
+  const content = analysisData.choices?.[0]?.message?.content;
+
+  if (!content) return { error: "Invalid AI response" };
+
+  return { content, sources: topSources };
 }
 
-// ------------------------------
-// Dynamic date helper
-// ------------------------------
-function getTodayString(): string {
-  const now = new Date();
-  return now.toISOString().split("T")[0]; // e.g. "2026-02-06"
-}
-
-// ------------------------------
-// SerpAPI fallback search
-// ------------------------------
-async function runLiveSearch(query: string) {
+// Perform web search using Gemini grounding as primary method
+async function performWebSearch(query: string): Promise<Source[]> {
+  // Try SerpAPI first if available
   const SERPAPI_KEY = Deno.env.get("SERPAPI_KEY");
-  if (!SERPAPI_KEY) {
-    console.log("SERPAPI_KEY not configured – skipping fallback search");
-    return { snippets: "", sources: [], error: "no-key" };
+  if (SERPAPI_KEY) {
+    try {
+      const url = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}&num=5`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const results = (data.organic_results || []).slice(0, 5);
+        return results.map((r: any) => ({
+          title: r.title || "Untitled",
+          url: r.link || "",
+          snippet: r.snippet || "",
+        }));
+      }
+      await res.text(); // consume body
+    } catch (e) {
+      console.error("SerpAPI error:", e);
+    }
   }
 
-  const url = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error("SerpAPI error:", res.status, await res.text());
-    return { snippets: "", sources: [], error: "Live search failed." };
+  // Fallback: use Gemini to search and summarize (with grounding)
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return [];
+
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: "You are a web search assistant. Return exactly 5 search results as JSON array." },
+          { role: "user", content: `Search for: "${query}"\n\nReturn JSON array: [{"title":"...","url":"...","snippet":"..."}]` },
+        ],
+        tools: [{ googleSearch: {} }],
+      }),
+    });
+
+    if (!res.ok) {
+      await res.text();
+      return [];
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content || "";
+
+    // Try to extract grounding metadata sources
+    const choice = data.choices?.[0];
+    const meta = choice?.message?.grounding_metadata
+      ?? choice?.message?.groundingMetadata
+      ?? data?.grounding_metadata
+      ?? data?.groundingMetadata;
+
+    if (meta?.grounding_chunks || meta?.groundingChunks) {
+      const chunks = meta.grounding_chunks ?? meta.groundingChunks ?? [];
+      const sources: Source[] = [];
+      for (const chunk of chunks) {
+        const web = chunk.web ?? chunk;
+        if (web?.uri || web?.url) {
+          sources.push({
+            title: web.title ?? "Source",
+            url: web.uri ?? web.url,
+            snippet: web.snippet ?? "",
+          });
+        }
+      }
+      if (sources.length > 0) return sources.slice(0, 5);
+    }
+
+    // Try parsing content as JSON array
+    try {
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsed)) {
+          return parsed.slice(0, 5).map((r: any) => ({
+            title: r.title || "Source",
+            url: r.url || r.link || "",
+            snippet: r.snippet || r.description || "",
+          }));
+        }
+      }
+    } catch { /* ignore */ }
+
+    return [];
+  } catch (e) {
+    console.error("Gemini search fallback error:", e);
+    return [];
   }
-
-  const data = await res.json();
-  const top = (data.organic_results || []).slice(0, 5);
-
-  const snippets = top
-    .map((r: any, i: number) => `${i + 1}. ${r.title || "Untitled"}\n${r.snippet || ""}\n${r.link || ""}`)
-    .join("\n\n");
-
-  const sources = top.map((r: any) => ({ title: r.title || "", link: r.link || "" }));
-  return { snippets, sources, error: null };
 }
 
-// ------------------------------
 // Main handler
-// ------------------------------
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -150,78 +270,31 @@ serve(async (req) => {
     const today = getTodayString();
     console.log(`Analyzing (${today}):`, userInput.substring(0, 120));
 
-    // ── STEP 1: Decide if live search is needed ──
-    const decisionSystem = `Today's date is ${today}. You are a strict classifier.
-Output ONLY one token: LIVE_SEARCH_REQUIRED or STATIC_ANALYSIS_OK.
-Choose LIVE_SEARCH_REQUIRED if the claim involves recent events, current office holders, 2024-2026 facts, prices, statistics, or anything time-sensitive.
-Choose STATIC_ANALYSIS_OK for timeless general knowledge.`;
+    const result = await callGeminiWithSearch(LOVABLE_API_KEY, userInput, today);
 
-    const decisionRes = await callGemini({
-      apiKey: LOVABLE_API_KEY,
-      system: decisionSystem,
-      user: `Claim: "${userInput}"`,
-    });
-
-    if (decisionRes.error) {
-      return new Response(JSON.stringify({ error: decisionRes.error }), {
+    if (result.error) {
+      return new Response(JSON.stringify({ error: result.error }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const needsLiveSearch = decisionRes.content!.includes("LIVE_SEARCH_REQUIRED");
-    console.log("Decision:", needsLiveSearch ? "LIVE_SEARCH" : "STATIC");
-
-    // ── STEP 2: Final analysis with Google Search grounding ──
-    const analysisSystem = `Today's date is ${today}. You are an expert fact-checker.
-You have access to Google Search to verify claims in real-time. USE IT for any time-sensitive or verifiable claim.
-Never assume your training data is current — always ground your answer in search results when available.
-
-Respond with valid JSON exactly in this format:
-{
-  "verdict": "real" | "fake" | "uncertain",
-  "confidence": <number 0-100>,
-  "explanation": "<clear explanation grounded in evidence>",
-  "redFlags": ["<flag1>", "<flag2>"]
-}`;
-
-    const analysisUser = `Fact-check this claim thoroughly:\n"${userInput}"`;
-
-    // Call Gemini WITH Google Search grounding enabled
-    const analysisRes = await callGemini({
-      apiKey: LOVABLE_API_KEY,
-      system: analysisSystem,
-      user: analysisUser,
-      useGrounding: true,
-    });
-
-    if (analysisRes.error) {
-      // Fallback: try without grounding + SerpAPI
-      console.warn("Grounded call failed, falling back to SerpAPI + static analysis");
-      return await fallbackAnalysis(LOVABLE_API_KEY, userInput, today, needsLiveSearch);
-    }
-
-    const content = analysisRes.content!;
-    const groundedSources = analysisRes.groundedSources ?? [];
-    console.log(`Gemini response received. Grounded sources: ${groundedSources.length}`);
-
-    // ── Parse JSON ──
+    // Parse the JSON response
     let analysis: any;
     try {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
-      analysis = JSON.parse(jsonMatch[1].trim());
+      const cleaned = result.content!.replace(/```(?:json)?\s*/g, "").replace(/```/g, "").trim();
+      analysis = JSON.parse(cleaned);
     } catch {
-      console.error("JSON parse failed, using defaults");
+      console.error("JSON parse failed for:", result.content);
       analysis = {
         verdict: "uncertain",
         confidence: 50,
-        explanation: "Unable to fully analyze this content. Please try again.",
+        explanation: "Unable to fully parse analysis. Please try again.",
         redFlags: [],
       };
     }
 
-    // ── Build response ──
-    const result = {
+    const response = {
       verdict: ["real", "fake", "uncertain"].includes(analysis.verdict) ? analysis.verdict : "uncertain",
       confidence: typeof analysis.confidence === "number"
         ? Math.min(100, Math.max(0, Math.round(analysis.confidence)))
@@ -230,13 +303,12 @@ Respond with valid JSON exactly in this format:
       redFlags: Array.isArray(analysis.redFlags)
         ? analysis.redFlags.filter((f: unknown) => typeof f === "string")
         : [],
-      sourceMode: groundedSources.length > 0 ? "grounded" : "static",
-      sources: groundedSources.length > 0
-        ? groundedSources
-        : [],
+      sources: result.sources ?? [],
     };
 
-    return new Response(JSON.stringify(result), {
+    console.log(`Result: ${response.verdict} (${response.confidence}%) with ${response.sources.length} sources`);
+
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
@@ -247,56 +319,3 @@ Respond with valid JSON exactly in this format:
     );
   }
 });
-
-// ------------------------------
-// Fallback: SerpAPI + static Gemini (no grounding)
-// ------------------------------
-async function fallbackAnalysis(apiKey: string, userInput: string, today: string, needsLiveSearch: boolean) {
-  let webSnippets = "";
-  let sources: Array<{ title: string; link: string }> = [];
-  let sourceMode: "static" | "live-web" = "static";
-
-  if (needsLiveSearch) {
-    const search = await runLiveSearch(userInput);
-    if (!search.error) {
-      sourceMode = "live-web";
-      webSnippets = search.snippets;
-      sources = search.sources;
-    }
-  }
-
-  const system = `Today's date is ${today}. You are an expert fact-checker.
-${webSnippets ? "Base your verdict ONLY on the provided web evidence." : "Analyze using your knowledge."}
-If evidence is insufficient → verdict must be "uncertain".
-Respond with valid JSON: { "verdict": "real"|"fake"|"uncertain", "confidence": <0-100>, "explanation": "<text>", "redFlags": ["..."] }`;
-
-  const user = webSnippets
-    ? `Claim: "${userInput}"\n\nWeb evidence:\n${webSnippets}`
-    : `Fact-check: "${userInput}"`;
-
-  const res = await callGemini({ apiKey, system, user });
-
-  if (res.error) {
-    return new Response(JSON.stringify({ error: res.error }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  let analysis: any;
-  try {
-    const m = res.content!.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, res.content!];
-    analysis = JSON.parse(m[1].trim());
-  } catch {
-    analysis = { verdict: "uncertain", confidence: 50, explanation: "Parse error.", redFlags: [] };
-  }
-
-  return new Response(JSON.stringify({
-    verdict: ["real", "fake", "uncertain"].includes(analysis.verdict) ? analysis.verdict : "uncertain",
-    confidence: typeof analysis.confidence === "number" ? Math.min(100, Math.max(0, Math.round(analysis.confidence))) : 50,
-    explanation: typeof analysis.explanation === "string" ? analysis.explanation : "Analysis complete.",
-    redFlags: Array.isArray(analysis.redFlags) ? analysis.redFlags.filter((f: unknown) => typeof f === "string") : [],
-    sourceMode,
-    sources: sources.map(s => ({ title: s.title, url: s.link })),
-  }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
