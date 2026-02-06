@@ -28,8 +28,10 @@ async function callGemini({
     ],
   };
 
-  // Note: googleSearch grounding is not supported via the OpenAI-compatible gateway.
-  // Live search is handled via SerpAPI fallback instead.
+  // Enable Gemini Google Search grounding when requested
+  if (useGrounding) {
+    body.tools = [{ googleSearch: {} }];
+  }
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
